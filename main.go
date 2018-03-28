@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
-	"net/http"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -16,16 +16,20 @@ func main() {
 	var debug bool
 	var botId string
 	var channelId string
-
+	var verificationToken string
+	var port int
 	flag.StringVar(&token, "token", "", "'--token' bot user token / env BOT_TOKEN.")
 	flag.StringVar(&botId, "botId", "", "'--botId' bot id/ env BOT_ID. ")
 	flag.StringVar(&channelId, "channelId", "", "'--channelId' slack channel /env BOT_CHANNEL.")
+	flag.StringVar(&verificationToken, "checkToken", "", "'--checkToken' slack channel /env CHECK_TOKEN.")
+	flag.IntVar(&port, "port", 3000, "'--port' listening ports default 3000.")
 	flag.BoolVar(&debug, "debug", false, "'--debug' if true, debug enabled.")
 	flag.Parse()
 
 	token = ValidateParam(token, "BOT_TOKEN", "bot token expected. env BOT_TOKEN or arg --token")
 	botId = ValidateParam(botId, "BOT_ID", "botId expected. env BOT_ID or arg --botId")
 	channelId = ValidateParam(channelId, "BOT_CHANNEL", "bot channel expected. env BOT_CHANNEL or arg --channelId")
+	verificationToken = ValidateParam(verificationToken, "CHECK_TOKEN", "missing checkToken")
 
 	client := slack.New(token)
 	client.SetDebug(debug)
@@ -38,7 +42,7 @@ func main() {
 
 	rtm := client.NewRTM()
 	go rtm.ManageConnection()
-	go HttpHandler()
+	go HttpServer(strconv.Itoa(port), verificationToken)
 
 	for {
 		select {
@@ -61,16 +65,6 @@ func main() {
 				//Take no action
 			}
 		}
-	}
-}
-func HttpHandler() {
-	http.Handle("/interaction", interactionHandler{
-		verificationToken: "xoxb-336749255621-uyvA4SbsYrHmI5UZTz37dhEl",
-	})
-
-	Log(fmt.Sprintf("[INFO] Server listening on :%s", "8082"))
-	if err := http.ListenAndServe(":"+"8082", nil); err != nil {
-		LogError(fmt.Errorf("[ERROR] %s", err))
 	}
 }
 

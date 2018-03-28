@@ -18,37 +18,48 @@ type interactionHandler struct {
 	verificationToken string
 }
 
+func HttpServer(port string, token string) {
+	http.Handle("/interaction", interactionHandler{
+		verificationToken: token,
+	})
+
+	Log(fmt.Sprintf("[INFO] Server listening on :%s", port))
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		LogError(fmt.Errorf("[ERROR] %s", err))
+	}
+}
+
 func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		log.Printf("[ERROR] Invalid method: %s", r.Method)
+		Log(fmt.Sprintf("[ERROR] Invalid method: %s", r.Method))
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("[ERROR] Failed to read request body: %s", err)
+		Log(fmt.Sprintf("[ERROR] Failed to read request body: %s", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	jsonStr, err := url.QueryUnescape(string(buf)[8:])
 	if err != nil {
-		log.Printf("[ERROR] Failed to unespace request body: %s", err)
+		Log(fmt.Sprintf("[ERROR] Failed to unespace request body: %s", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	var message slack.AttachmentActionCallback
 	if err := json.Unmarshal([]byte(jsonStr), &message); err != nil {
-		log.Printf("[ERROR] Failed to decode json message from slack: %s", jsonStr)
+		Log(fmt.Sprintf("[ERROR] Failed to decode json message from slack: %s", jsonStr))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Only accept message from slack with valid token
 	if message.Token != h.verificationToken {
-		log.Printf("[ERROR] Invalid token: %s", message.Token)
+		Log(fmt.Sprintf("[ERROR] Invalid token: %s", message.Token))
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
