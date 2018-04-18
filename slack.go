@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// SlackListener ...
 type SlackListener struct {
 	client    *slack.Client
 	botID     string

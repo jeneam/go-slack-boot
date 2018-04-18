@@ -18,7 +18,8 @@ type interactionHandler struct {
 	verificationToken string
 }
 
-func HttpServer(port string, token string) {
+// HTTPServer ...
+func HTTPServer(port string, token string) {
 	http.Handle("/interaction", interactionHandler{
 		verificationToken: token,
 	})
